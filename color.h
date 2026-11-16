@@ -16,6 +16,11 @@
  * The tag is replaced by an ANSI SGR escape sequence. Unknown or malformed
  * tags are kept as literal text. Formatting conversions such as `%d` and `%s`
  * are processed by the standard printf family after tag conversion.
+ * Named colors include `RED` for standard foreground, `BG_RED` for standard
+ * background, and `BRIGHT_RED` for bright foreground. Shortcuts include
+ * `{FG(196)}` for indexed foreground, `{#202020}` for RGB foreground,
+ * `{BG(24)}` for indexed background, `{BG(#202020)}` for RGB background, and
+ * `{/}` as a reset alias.
  *
  * @par Implementation
  * Define `COLOR_H_IMPL` in exactly one C or C++ translation unit immediately
@@ -37,7 +42,7 @@
 #ifndef COLOR_H
 #define COLOR_H
 
-#include <stdio.h>
+// #include <stdio.h>
 #include <stdarg.h>
 
 /**
@@ -60,78 +65,81 @@
 #define FORMAT(x) "\033[" x "m"
 
 /** Reset all SGR attributes. */
-#define RESET "0" 
+#define RESET "0"
 /** Enable bold/intense text. */
 #define BOLD "1"
 /** Enable faint text. */
-#define FEINT "2"
+#define FAINT "2"
+#define FEINT FAINT
+#define DIM FAINT
 /** Enable italic text. */
 #define ITALIC "3"
 /** Enable underlined text. */
 #define UNDERLINE "4"
-/** Enable slow blinking text. */
-#define SLOW_BLINK "5"
-/** Enable rapid blinking text. */
-#define RAPID_BLINK "6"
+/** Enable blinking text. */
+#define BLINK "5"
 /** Invert foreground and background colors. */
 #define INVERSE "7"
-/** Conceal text. */
+#define REVERSE "7"
+/** Enable concealed text. */
 #define CONCEAL "8"
+#define HIDE CONCEAL
 /** Strike through text. */
-#define CROSS "9"
-/** Select the default font. */
-#define DEFAULT_FONT "10"
-/** Select alternate font @p x (0-9). */
-#define ALTERNATE_FONT(x) "1" #x
-/** Select the Fraktur font. */
-#define FRAKTUR "20"
-/** Disable bold/intense text. */
-#define BOLD_OFF "21"
-/** Enable double underline. */
+#define STRIKETHROUGH "9"
+#define CROSS STRIKETHROUGH
+/** Enable double underline where supported (SGR 21). */
 #define DOUBLE_UNDERLINE "21"
-/** Disable bold and faint text. */
-#define BOLD_FAINT "22"
-/** Disable italic and Fraktur text. */
-#define ITALIC_FRAKTUR "23"
+/** Disable bold and faint text (normal intensity, SGR 22). */
+#define NORMAL_INTENSITY "22"
+#define BOLD_OFF NORMAL_INTENSITY
+#define BOLD_FAINT NORMAL_INTENSITY
+/** Disable italic text. */
+#define ITALIC_OFF "23"
 /** Disable underline. */
 #define UNDERLINE_OFF "24"
-/** Disable blinking text. */
-#define BLINK_OFF "25"
 /** Disable inverse video. */
 #define INVERSE_OFF "27"
-/** Disable concealment. */
-#define CONCEAL_OFF "28"
 /** Disable strikethrough. */
-#define CROSS_OFF "29"
+#define STRIKETHROUGH_OFF "29"
+/** Compatibility alias for STRIKETHROUGH_OFF. */
+#define CROSS_OFF STRIKETHROUGH_OFF
 /** Set foreground color using parameters such as `5;196` or `2;255;0;0`. */
 #define SET_FOREGROUND(x) "38;" #x
+/** Set foreground to 256-color palette index @p x (0-255). */
+#define FG(x) "38;5;" #x
 /** Restore the default foreground color. */
 #define RESET_FOREGROUND "39"
+/** Set standard background color to black. */
+#define BACKGROUND_BLACK "40"
+/** Set standard background color to red. */
+#define BACKGROUND_RED "41"
+/** Set standard background color to green. */
+#define BACKGROUND_GREEN "42"
+/** Set standard background color to yellow. */
+#define BACKGROUND_YELLOW "43"
+/** Set standard background color to blue. */
+#define BACKGROUND_BLUE "44"
+/** Set standard background color to magenta. */
+#define BACKGROUND_MAGENTA "45"
+/** Set standard background color to cyan. */
+#define BACKGROUND_CYAN "46"
+/** Set standard background color to white. */
+#define BACKGROUND_WHITE "47"
+/** Short aliases for standard background colors. */
+#define BG_BLACK BACKGROUND_BLACK
+#define BG_RED BACKGROUND_RED
+#define BG_GREEN BACKGROUND_GREEN
+#define BG_YELLOW BACKGROUND_YELLOW
+#define BG_BLUE BACKGROUND_BLUE
+#define BG_MAGENTA BACKGROUND_MAGENTA
+#define BG_CYAN BACKGROUND_CYAN
+#define BG_WHITE BACKGROUND_WHITE
 /** Set background color using parameters such as `5;196` or `2;255;0;0`. */
 #define SET_BACKGROUND(x) "48;" #x
+/** Set background to 256-color palette index @p x (0-255). */
+#define BG(x) "48;5;" #x
 /** Restore the default background color. */
 #define RESET_BACKGROUND "49"
-
-/** Enclose text. */
-#define FRAMED "51"
-/** Mark text as encircled. */
-#define ENCIRCLED "52"
-/** Enable overline. */
-#define OVERLINED "53"
-/** Enable frame and overline. */
-#define FRAMED_OVERLINED "54"
-/** Disable overline. */
-#define NOT_OVERLINED "55"
-/** Enable ideogram underline. */
-#define IDEOGRAM_UNDERLINE "60"
-/** Enable ideogram overline. */
-#define IDEOGRAM_OVERLINE "62"
-/** Enable ideogram double overline. */
-#define IDEOGRAM_DOUBLE_OVERLINE "63"
-/** Enable ideogram stress marking. */
-#define IDEOGRAM_STRESS "64"
-/** Disable ideogram attributes. */
-#define IDEOGRAM_OFF "65"
 
 /** Set standard foreground color to black. */
 #define BLACK "30"
@@ -150,10 +158,22 @@
 /** Set standard foreground color to white. */
 #define WHITE "37"
 
+/** Set bright foreground color. */
+#define BRIGHT_BLACK "90"
+#define BRIGHT_RED "91"
+#define BRIGHT_GREEN "92"
+#define BRIGHT_YELLOW "93"
+#define BRIGHT_BLUE "94"
+#define BRIGHT_MAGENTA "95"
+#define BRIGHT_CYAN "96"
+#define BRIGHT_WHITE "97"
 /** Set bright foreground color @p x (0-7). */
-#define BRIGHTNESS_FOREGROUND(x) "9" #x
+#define BRIGHT_FOREGROUND(x) "9" #x
 /** Set bright background color @p x (0-7). */
-#define BRIGHTNESS_BACKGROUND(x) "10" #x
+#define BRIGHT_BACKGROUND(x) "10" #x
+/** Compatibility aliases for BRIGHT_FOREGROUND and BRIGHT_BACKGROUND. */
+#define BRIGHTNESS_FOREGROUND(x) BRIGHT_FOREGROUND(x)
+#define BRIGHTNESS_BACKGROUND(x) BRIGHT_BACKGROUND(x)
 /** @} */
 
 /**
@@ -162,6 +182,9 @@
  * Tags may contain one or more supported names separated by spaces or tabs.
  * For example, `{BOLD RED}` emits one combined SGR sequence. Use `{RESET}` to
  * restore terminal attributes when appropriate.
+ * The supported tag set focuses on commonly implemented SGR attributes.
+ * Double underline (SGR 21) is terminal-dependent; normal intensity (SGR 22)
+ * disables both bold and faint because SGR has no portable bold-only reset.
  *
  * The function supports the same `%` conversions and variadic arguments as
  * `printf`. If the format contains no opening brace, it is sent directly to
@@ -201,6 +224,7 @@ static inline int c_printf(const char *const _Color_Format, ...);
 static inline int c_sprintf(char *_Buffer, const char *const _Color_Format, ...);
 
 #ifdef COLOR_H_IMPL
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -209,7 +233,11 @@ static inline int color_token_matches(const char *token, size_t length, const ch
     return strlen(name) == length && memcmp(token, name, length) == 0;
 }
 
-static inline int color_read_small_number(const char *text, size_t length, int *number)
+static inline int color_read_number(
+    const char *text,
+    size_t length,
+    int maximum,
+    int *number)
 {
     int value = 0;
 
@@ -225,15 +253,90 @@ static inline int color_read_small_number(const char *text, size_t length, int *
             return 0;
         }
 
-        value = value * 10 + (text[i] - '0');
-        if (value > 9)
+        int digit = text[i] - '0';
+        if (digit > maximum || value > (maximum - digit) / 10)
         {
             return 0;
         }
+        value = value * 10 + digit;
     }
 
     *number = value;
     return 1;
+}
+
+static inline int color_read_hex_byte(const char *text, int *value)
+{
+    int result = 0;
+    for (size_t i = 0; i < 2; ++i)
+    {
+        char character = text[i];
+        int digit;
+        if (character >= '0' && character <= '9')
+        {
+            digit = character - '0';
+        }
+        else if (character >= 'a' && character <= 'f')
+        {
+            digit = character - 'a' + 10;
+        }
+        else if (character >= 'A' && character <= 'F')
+        {
+            digit = character - 'A' + 10;
+        }
+        else
+        {
+            return 0;
+        }
+
+        result = result * 16 + digit;
+    }
+
+    *value = result;
+    return 1;
+}
+
+static inline void color_append_decimal(char *output, size_t *output_length, int value)
+{
+    if (value >= 100)
+    {
+        output[(*output_length)++] = (char)('0' + value / 100);
+        value %= 100;
+        output[(*output_length)++] = (char)('0' + value / 10);
+        output[(*output_length)++] = (char)('0' + value % 10);
+    }
+    else if (value >= 10)
+    {
+        output[(*output_length)++] = (char)('0' + value / 10);
+        output[(*output_length)++] = (char)('0' + value % 10);
+    }
+    else
+    {
+        output[(*output_length)++] = (char)('0' + value);
+    }
+}
+
+static inline void color_append_rgb(
+    char *output,
+    size_t *output_length,
+    const char *prefix,
+    int red,
+    int green,
+    int blue)
+{
+    size_t prefix_length = strlen(prefix);
+    memcpy(output + *output_length, prefix, prefix_length);
+    *output_length += prefix_length;
+
+    const int channels[] = {red, green, blue};
+    for (size_t i = 0; i < sizeof(channels) / sizeof(channels[0]); ++i)
+    {
+        if (i > 0)
+        {
+            output[(*output_length)++] = ';';
+        }
+        color_append_decimal(output, output_length, channels[i]);
+    }
 }
 
 static inline int color_append_token(
@@ -248,38 +351,38 @@ static inline int color_append_token(
         const char *code;
     } codes[] = {
         {"RESET", "0"},
+        {"/", "0"},
         {"BOLD", "1"},
+        {"**", "1"},
+        {"FAINT", "2"},
         {"FEINT", "2"},
+        {"DIM", "2"},
         {"ITALIC", "3"},
+        {"*", "3"},
         {"UNDERLINE", "4"},
-        {"SLOW_BLINK", "5"},
-        {"RAPID_BLINK", "6"},
+        {"_", "4"},
+        {"BLINK", "5"},
         {"INVERSE", "7"},
+        {"REVERSE", "7"},
+        {"@", "7"},
         {"CONCEAL", "8"},
+        {"HIDE", "8"},
+        {"!", "8"},
+        {"STRIKETHROUGH", "9"},
         {"CROSS", "9"},
-        {"DEFAULT_FONT", "10"},
-        {"FRAKTUR", "20"},
-        {"BOLD_OFF", "21"},
+        {"~", "9"},
         {"DOUBLE_UNDERLINE", "21"},
+        {"__", "21"},
+        {"BOLD_OFF", "22"},
         {"BOLD_FAINT", "22"},
-        {"ITALIC_FRAKTUR", "23"},
+        {"NORMAL_INTENSITY", "22"},
+        {"ITALIC_OFF", "23"},
         {"UNDERLINE_OFF", "24"},
-        {"BLINK_OFF", "25"},
         {"INVERSE_OFF", "27"},
-        {"CONCEAL_OFF", "28"},
+        {"STRIKETHROUGH_OFF", "29"},
         {"CROSS_OFF", "29"},
         {"RESET_FOREGROUND", "39"},
         {"RESET_BACKGROUND", "49"},
-        {"FRAMED", "51"},
-        {"ENCIRCLED", "52"},
-        {"OVERLINED", "53"},
-        {"FRAMED_OVERLINED", "54"},
-        {"NOT_OVERLINED", "55"},
-        {"IDEOGRAM_UNDERLINE", "60"},
-        {"IDEOGRAM_OVERLINE", "62"},
-        {"IDEOGRAM_DOUBLE_OVERLINE", "63"},
-        {"IDEOGRAM_STRESS", "64"},
-        {"IDEOGRAM_OFF", "65"},
         {"BLACK", "30"},
         {"RED", "31"},
         {"GREEN", "32"},
@@ -287,7 +390,32 @@ static inline int color_append_token(
         {"BLUE", "34"},
         {"MAGENTA", "35"},
         {"CYAN", "36"},
-        {"WHITE", "37"}};
+        {"WHITE", "37"},
+        {"BRIGHT_BLACK", "90"},
+        {"BRIGHT_RED", "91"},
+        {"BRIGHT_GREEN", "92"},
+        {"BRIGHT_YELLOW", "93"},
+        {"BRIGHT_BLUE", "94"},
+        {"BRIGHT_MAGENTA", "95"},
+        {"BRIGHT_CYAN", "96"},
+        {"BRIGHT_WHITE", "97"},
+        {"BACKGROUND_BLACK", "40"},
+        {"BACKGROUND_RED", "41"},
+        {"BACKGROUND_GREEN", "42"},
+        {"BACKGROUND_YELLOW", "43"},
+        {"BACKGROUND_BLUE", "44"},
+        {"BACKGROUND_MAGENTA", "45"},
+        {"BACKGROUND_CYAN", "46"},
+        {"BACKGROUND_WHITE", "47"},
+        {"BG_BLACK", "40"},
+        {"BG_RED", "41"},
+        {"BG_GREEN", "42"},
+        {"BG_YELLOW", "43"},
+        {"BG_BLUE", "44"},
+        {"BG_MAGENTA", "45"},
+        {"BG_CYAN", "46"},
+        {"BG_WHITE", "47"}
+    };
 
     for (size_t i = 0; i < sizeof(codes) / sizeof(codes[0]); ++i)
     {
@@ -300,12 +428,65 @@ static inline int color_append_token(
         }
     }
 
+    int red;
+    int green;
+    int blue;
+    if (token_length == 7 && token[0] == '#' &&
+        color_read_hex_byte(token + 1, &red) &&
+        color_read_hex_byte(token + 3, &green) &&
+        color_read_hex_byte(token + 5, &blue))
+    {
+        color_append_rgb(output, output_length, "38;2;", red, green, blue);
+        return 1;
+    }
+
+    if (token_length == 11 && memcmp(token, "BG(#", 4) == 0 &&
+        token[token_length - 1] == ')' &&
+        color_read_hex_byte(token + 4, &red) &&
+        color_read_hex_byte(token + 6, &green) &&
+        color_read_hex_byte(token + 8, &blue))
+    {
+        color_append_rgb(output, output_length, "48;2;", red, green, blue);
+        return 1;
+    }
+
+    const char *indexed_names[] = {"FG(", "BG("};
+    const char *indexed_codes[] = {"38;5;", "48;5;"};
+    for (size_t i = 0; i < sizeof(indexed_names) / sizeof(indexed_names[0]); ++i)
+    {
+        const size_t prefix_length = 3;
+        if (token_length <= prefix_length ||
+            memcmp(token, indexed_names[i], prefix_length) != 0 ||
+            token[token_length - 1] != ')')
+        {
+            continue;
+        }
+
+        int index;
+        if (!color_read_number(
+                token + prefix_length,
+                token_length - prefix_length - 1,
+                255,
+                &index))
+        {
+            return 0;
+        }
+
+        size_t code_length = strlen(indexed_codes[i]);
+        memcpy(output + *output_length, indexed_codes[i], code_length);
+        *output_length += code_length;
+        color_append_decimal(output, output_length, index);
+        return 1;
+    }
+
     const char *dynamic_names[] = {
+        "BRIGHT_FOREGROUND(",
+        "BRIGHT_BACKGROUND(",
         "BRIGHTNESS_FOREGROUND(",
         "BRIGHTNESS_BACKGROUND(",
-        "ALTERNATE_FONT("};
-    int dynamic_base[] = {90, 100, 10};
-    size_t prefix_lengths[] = {22, 22, 15};
+    };
+    int dynamic_base[] = {90, 100, 90, 100};
+    size_t prefix_lengths[] = {18, 18, 22, 22};
 
     for (size_t i = 0; i < sizeof(dynamic_names) / sizeof(dynamic_names[0]); ++i)
     {
@@ -319,24 +500,13 @@ static inline int color_append_token(
 
         int number;
         size_t number_length = token_length - prefix_length - 1;
-        if (!color_read_small_number(token + prefix_length, number_length, &number))
+        if (!color_read_number(token + prefix_length, number_length, 7, &number))
         {
             return 0;
         }
 
         int value = dynamic_base[i] + number;
-        if (value >= 100)
-        {
-            output[(*output_length)++] = (char)('0' + value / 100);
-            value %= 100;
-            output[(*output_length)++] = (char)('0' + value / 10);
-            output[(*output_length)++] = (char)('0' + value % 10);
-        }
-        else
-        {
-            output[(*output_length)++] = (char)('0' + value / 10);
-            output[(*output_length)++] = (char)('0' + value % 10);
-        }
+        color_append_decimal(output, output_length, value);
         return 1;
     }
 
@@ -381,7 +551,12 @@ static inline int color_append_token(
 static inline char *color_convert_format(const char *format)
 {
     size_t format_length = strlen(format);
-    char *output = (char *)malloc(format_length + 1);
+    if (format_length > ((size_t)-1 - 1) / 3)
+    {
+        return NULL;
+    }
+
+    char *output = (char *)malloc(format_length * 3 + 1);
     if (output == NULL)
     {
         return NULL;
