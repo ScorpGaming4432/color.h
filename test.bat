@@ -1,1 +1,1 @@
-clang main.c -o testing.exe && .\testing.exe 
+clang -std=c99 -Wall -Wextra -ggdb -pedantic main.c -o testing.exe && .\testing.exe 
